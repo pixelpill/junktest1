@@ -1,0 +1,102 @@
+<div id="authSection">
+  <h2>Sign Up</h2>
+  <input type="text" id="signupUsername" placeholder="Username">
+  <input type="password" id="signupPassword" placeholder="Password">
+  <button onclick="signup()">Sign Up</button>
+
+  <h2>Log In</h2>
+  <input type="text" id="loginUsername" placeholder="Username">
+  <input type="password" id="loginPassword" placeholder="Password">
+  <button onclick="login()">Log In</button>
+</div>
+
+<div id="coinSection" style="display:none;">
+  <p>Welcome, <span id="userDisplay"></span>!</p>
+  <div id="coinDisplay">Coins: 0</div>
+</div>
+
+<div id="leaderboard">
+  <h2>Leaderboard</h2>
+  <div id="leaderboardList"></div>
+</div>
+
+<script>
+  let currentUser = '';
+  let coins = 0;
+  let coinInterval;
+
+  function signup() {
+    const username = document.getElementById('signupUsername').value.trim();
+    const password = document.getElementById('signupPassword').value;
+
+    if (!username || !password) return alert("Fill in both fields");
+
+    if (localStorage.getItem('user_' + username)) {
+      return alert("Username already exists");
+    }
+
+    const userData = {
+      password: password,
+      coins: 0
+    };
+
+    localStorage.setItem('user_' + username, JSON.stringify(userData));
+    alert("Signup successful! You can now log in.");
+  }
+
+  function login() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    const stored = localStorage.getItem('user_' + username);
+    if (!stored) return alert("User not found");
+
+    const userData = JSON.parse(stored);
+    if (userData.password !== password) return alert("Incorrect password");
+
+    currentUser = username;
+    coins = userData.coins;
+
+    document.getElementById('authSection').style.display = 'none';
+    document.getElementById('coinSection').style.display = 'block';
+    document.getElementById('userDisplay').textContent = currentUser;
+    updateCoinDisplay();
+
+    coinInterval = setInterval(() => {
+      coins++;
+      userData.coins = coins;
+      localStorage.setItem('user_' + currentUser, JSON.stringify(userData));
+      updateCoinDisplay();
+      updateLeaderboard();
+    }, 60000); // 1 coin per minute
+
+    updateLeaderboard();
+  }
+
+  function updateCoinDisplay() {
+    document.getElementById('coinDisplay').textContent = 'Coins: ' + coins;
+  }
+
+  function updateLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboardList');
+    leaderboardList.innerHTML = '';
+
+    const users = Object.keys(localStorage).filter(key => key.startsWith('user_'));
+    const scores = users.map(key => {
+      const data = JSON.parse(localStorage.getItem(key));
+      return {
+        name: key.replace('user_', ''),
+        coins: data.coins || 0
+      };
+    });
+
+    scores.sort((a, b) => b.coins - a.coins);
+
+    scores.forEach(user => {
+      const row = document.createElement('div');
+      row.className = 'user-row';
+      row.textContent = `${user.name}: ${user.coins} coins`;
+      leaderboardList.appendChild(row);
+    });
+  }
+</script>
